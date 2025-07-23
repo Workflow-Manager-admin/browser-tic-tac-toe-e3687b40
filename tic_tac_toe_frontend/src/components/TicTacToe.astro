@@ -1,0 +1,251 @@
+---
+/**
+ * TicTacToe Game Component
+ * Implements a local 2-player tic tac toe game with responsive, centered grid and minimal styling.
+ */
+const primaryColor = "#1976d2";
+const accentColor = "#ef5350";
+const secondaryColor = "#424242";
+const emptyBoard = Array(9).fill("");
+const playerSymbols = ["X", "O"];
+---
+<div class="ttt-root">
+	<div class="ttt-board-card">
+		<div
+			class="ttt-board"
+			style={`--primary: ${primaryColor}; --accent: ${accentColor}; --secondary: ${secondaryColor};`}
+		>
+			{emptyBoard.map((_, idx) => (
+				<button
+					id={`ttt-cell-${idx}`}
+					class="ttt-cell clickable"
+					tabIndex={0}
+					aria-label={`Cell ${idx + 1}`}
+					data-idx={idx}
+				></button>
+			))}
+		</div>
+		<div class="ttt-controls">
+			<div id="ttt-status" class="ttt-status" aria-live="polite">
+				Player X's turn
+			</div>
+			<button
+				id="ttt-restart"
+				class="ttt-restart"
+				type="button"
+				autofocus
+			>
+				Restart Game
+			</button>
+		</div>
+	</div>
+</div>
+
+<script client:load>
+	// All JS in this block runs in browser only!
+	const playerSymbols = ["X", "O"];
+	const emptyBoard = Array(9).fill("");
+	let board = [...emptyBoard];
+	let currentPlayer = 0;
+	let winner = null;
+	let isDraw = false;
+	let winIndices = [];
+
+	const winCombos = [
+		[0, 1, 2],
+		[3, 4, 5],
+		[6, 7, 8],
+		[0, 3, 6],
+		[1, 4, 7],
+		[2, 5, 8],
+		[0, 4, 8],
+		[2, 4, 6],
+	];
+
+	function checkWinner() {
+		for (const combo of winCombos) {
+			const [a, b, c] = combo;
+			if (
+				board[a] &&
+				board[a] === board[b] &&
+				board[a] === board[c]
+			) {
+				return {symbol: board[a], indices: combo};
+			}
+		}
+		return null;
+	}
+
+	function triggerRerender() {
+		const statusDiv = document.getElementById("ttt-status");
+		statusDiv.textContent =
+			winner
+				? `Player ${winner} wins!`
+				: isDraw
+				? "It's a draw!"
+				: `Player ${playerSymbols[currentPlayer]}'s turn`;
+
+		for (let i = 0; i < 9; ++i) {
+			const cell = document.getElementById("ttt-cell-" + i);
+			cell.textContent = board[i];
+			cell.classList.toggle("won", winIndices.includes(i));
+			cell.classList.toggle(
+				"clickable",
+				!board[i] && !winner && !isDraw
+			);
+		}
+	}
+
+	function handleCellClick(idx) {
+		if (board[idx] || winner) return;
+		board[idx] = playerSymbols[currentPlayer];
+		const result = checkWinner();
+		if (result) {
+			winner = result.symbol;
+			winIndices = result.indices;
+		} else if (board.every(cell => cell)) {
+			isDraw = true;
+		} else {
+			currentPlayer = 1 - currentPlayer;
+		}
+		triggerRerender();
+	}
+
+	function resetGame() {
+		board = [...emptyBoard];
+		currentPlayer = 0;
+		winner = null;
+		isDraw = false;
+		winIndices = [];
+		triggerRerender();
+	}
+
+	// Attach event listeners after DOM is loaded
+	window.addEventListener("DOMContentLoaded", () => {
+		for (let i = 0; i < 9; ++i) {
+			const cell = document.getElementById("ttt-cell-" + i);
+			cell.addEventListener("click", () => handleCellClick(i));
+		}
+		const restartBtn = document.getElementById("ttt-restart");
+		restartBtn.addEventListener("click", resetGame);
+		triggerRerender();
+	});
+</script>
+
+<style>
+	:root {
+		--ttt-bg: #fff;
+		--ttt-card-bg: #f6f8fa;
+		--ttt-shadow: 0 2px 16px 0 rgba(25, 118, 210, 0.08);
+		--ttt-cell-size: max(70px, 7vw);
+		--ttt-font: 'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+	}
+	.ttt-root {
+		min-height: 100vh;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: var(--ttt-bg);
+		font-family: var(--ttt-font);
+	}
+	.ttt-board-card {
+		background: var(--ttt-card-bg);
+		border-radius: 24px;
+		padding: 2.2rem 1.3rem 1.7rem;
+		box-shadow: var(--ttt-shadow);
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		max-width: 380px;
+		width: 100vw;
+	}
+	.ttt-board {
+		display: grid;
+		grid-template-columns: repeat(3, var(--ttt-cell-size));
+		grid-template-rows: repeat(3, var(--ttt-cell-size));
+		gap: 0px;
+		border-radius: 18px;
+		overflow: hidden;
+		box-shadow: 0 3px 20px 0 rgba(25, 118, 210, 0.11);
+		background: #fff;
+	}
+	.ttt-cell {
+		width: var(--ttt-cell-size);
+		height: var(--ttt-cell-size);
+		border: none;
+		outline: none;
+		background: #fff;
+		font-size: 2.3rem;
+		font-weight: 600;
+		color: var(--primary);
+		cursor: pointer;
+		transition: background 0.17s, box-shadow 0.19s;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		border-right: 2px solid var(--secondary, #aaa);
+		border-bottom: 2px solid var(--secondary, #aaa);
+		box-sizing: border-box;
+	}
+	.ttt-cell:nth-child(3n) {
+		border-right: none;
+	}
+	.ttt-cell:nth-child(n+7) {
+		border-bottom: none;
+	}
+	.ttt-cell.clickable:hover, .ttt-cell.clickable:focus {
+		background: #e3f0fa;
+	}
+	.ttt-cell.won {
+		background: var(--accent);
+		color: #fff !important;
+		animation: ttt-win 0.3s linear alternate 2;
+	}
+	@keyframes ttt-win {
+		0%, 60%  { box-shadow: 0 0 1px 2px var(--accent, #ef5350); }
+		100%     { box-shadow: 0 0 2px 6px var(--accent, #ef5350); }
+	}
+	.ttt-controls {
+		margin-top: 1.2rem;
+		width: 100%;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 0.4rem;
+	}
+	.ttt-status {
+		font-size: 1.1rem;
+		font-weight: 500;
+		color: var(--secondary, #424242);
+		letter-spacing: 0.01em;
+		margin-bottom: 0.5rem;
+		min-height: 1.8em;
+		text-align: center;
+	}
+	.ttt-restart {
+		background: var(--primary, #1976d2);
+		color: #fff;
+		border: none;
+		padding: 0.77em 1.32em;
+		border-radius: 9px;
+		font-size: 1.06rem;
+		font-weight: 500;
+		cursor: pointer;
+		box-shadow: 0 1px 6px 0 rgba(25,118,210,0.09);
+		transition: background 0.16s, box-shadow 0.16s;
+		text-align: center;
+		letter-spacing: 0.03em;
+	}
+	.ttt-restart:hover, .ttt-restart:focus {
+		background: #1666bb;
+	}
+	@media (max-width: 540px) {
+		.ttt-board-card {
+			padding: 1.5rem 0.2rem 1.1rem;
+			max-width: 98vw;
+		}
+		.ttt-board {
+			--ttt-cell-size: max(22vw, 56px);
+		}
+	}
+</style>
